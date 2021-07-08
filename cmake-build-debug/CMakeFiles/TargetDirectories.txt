@@ -1,0 +1,3 @@
+C:/Users/SLAVA/CLionProjects/Huffman/cmake-build-debug/CMakeFiles/Huffman.dir
+C:/Users/SLAVA/CLionProjects/Huffman/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/SLAVA/CLionProjects/Huffman/cmake-build-debug/CMakeFiles/rebuild_cache.dir
