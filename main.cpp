@@ -7,7 +7,7 @@ struct Node {
     char a = 0;
     int weight = 0;
     Node *left = nullptr, *right = nullptr, *next = nullptr, *prev = nullptr;
-    std::string code = "";
+    std::string code;
 };
 struct Tree {
     Node *root;
@@ -138,9 +138,9 @@ void LNR(Node *root, const std::string& code, std::map <char, std::string> *code
     }
 }
 
-void encode(Node *root, std::map <char, std::string> codes) {
+void encode(std::map <char, std::string> codes) {
     std::ofstream out;
-    out.open("C:\\Users\\SLAVA\\CLionProjects\\Huffman\\output.txt");
+    out.open(R"(C:\Users\SLAVA\CLionProjects\Huffman\output.txt)");
     if(!out.is_open()){
         std::cout << "OOps something went wrong" << '\n';
     }
@@ -149,11 +149,11 @@ void encode(Node *root, std::map <char, std::string> codes) {
         out << it.first << ' ' << it.second << ' ';
     }
     out << '\n';
-    std::ifstream fin("C:\\Users\\SLAVA\\CLionProjects\\Huffman\\input.txt", std::ios::in);
+    std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\input.txt)", std::ios::in);
     char symb = 0, code;
     symb = fin.get();
     uint8_t i = 0;
-    while(1){
+    while(true){
         int8_t k = 7;
         int8_t counter = 0;
         while(k >= 0){
@@ -173,6 +173,8 @@ void encode(Node *root, std::map <char, std::string> codes) {
                     out.seekp(0);
                     out << char(counter) << ' '; //i - is the number of bits we have in the beginning of last byte
                     std::cout << std::bitset<8>(int(code)) << ' ';
+                    fin.close();
+                    out.close();
                     return;
                 }
                 i = 0;
@@ -185,10 +187,40 @@ void encode(Node *root, std::map <char, std::string> codes) {
     }
 
 }
+void decode(){
+    std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\output.txt)");
+    if(fin.is_open()){
+        std::string line;
+        std::getline(fin, line);
+        std::cout << line;
+        std::map <char, std::string> codes;
+        int8_t residue = line[0];
+        int8_t counter = 0;
+        int8_t start;
+        char symb;
+        for(int i = 2; i < line.size(); i++){
+            symb = line[i];
+            i+=2;
+            start = i;
+            while(line[i] != ' '){
+                i++;
+                counter++;
+            }
+            codes[symb] = std::string(line, start, counter);
+            counter = 0;
+        }
+        std::cout << '\n';
+        for(auto& it : codes){
+            std::cout << it.first << it.second;
+        }
+        return;
+    }
+    std::cout << "Something went wrong" << '\n';
+}
 int main() {
-    std::ifstream fin("C:\\Users\\SLAVA\\CLionProjects\\Huffman\\input.txt", std::ios::in);
+    std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\input.txt)", std::ios::in);
     char symb;
-    List freq;
+    List freq{};
     Node *thirst = new Node;
     symb = char(fin.get());
     thirst->a = symb;
@@ -209,7 +241,7 @@ int main() {
         tmp = tmp->next;
     }
     std::cout << '\n';
-    Tree huftree;
+    Tree huftree{};
     huftree.root = build_tree(&freq);
     std::map <char, std::string> codes;
     auto ptr_codes = &codes;
@@ -220,7 +252,8 @@ int main() {
     }
     std::cout << '\n';
 
-    encode(huftree.root, codes);
+    encode(codes);
+    decode();
 
 
 
