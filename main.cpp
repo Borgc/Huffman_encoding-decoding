@@ -9,6 +9,11 @@ struct Node {
     Node *left = nullptr, *right = nullptr, *next = nullptr, *prev = nullptr;
     std::string code;
 };
+struct Bn_Node {
+    char a = 0;
+    Bn_Node *left = nullptr, *right = nullptr;
+    std::string code;
+};
 struct Tree {
     Node *root;
 };
@@ -172,7 +177,7 @@ void encode(std::map <char, std::string> codes) {
                     out << code;
                     out.seekp(0);
                     out << char(counter) << ' '; //i - is the number of bits we have in the beginning of last byte
-                    std::cout << std::bitset<8>(int(code)) << ' ';
+                    //std::cout << std::bitset<8>(int(code)) << ' ';
                     fin.close();
                     out.close();
                     return;
@@ -181,7 +186,7 @@ void encode(std::map <char, std::string> codes) {
             }
         }
         k = 7;
-        std::cout << std::bitset<8>(int(code)) << ' ';
+        //std::cout << std::bitset<8>(int(code)) << ' ';
         out << code;
         code = 0;
     }
@@ -193,11 +198,18 @@ void decode(){
         std::string line;
         std::getline(fin, line);
         std::cout << line;
-        std::map <char, std::string> codes;
+        //make new map
+        std::map <std::string, char> codes;
         int8_t residue = line[0];
         int8_t counter = 0;
-        int8_t start;
+        int64_t start;
         char symb;
+        std::map <std::string, char>::iterator it;
+        if(line.size() <= 4){
+            std::string addition;
+            std::getline(fin, addition);
+            line = line + "\n" + addition;
+        }
         for(int i = 2; i < line.size(); i++){
             symb = line[i];
             i+=2;
@@ -206,13 +218,50 @@ void decode(){
                 i++;
                 counter++;
             }
-            codes[symb] = std::string(line, start, counter);
+            codes[std::string(line, start, counter)] = symb;
             counter = 0;
         }
+
         std::cout << '\n';
         for(auto& it : codes){
-            std::cout << it.first << it.second;
+            std::cout << it.second << it.first ;
         }
+        //decoding
+        std::ofstream out(R"(C:\Users\SLAVA\CLionProjects\Huffman\decoded.txt)");
+        int c;
+        bool flag;
+        std::string bin_code;
+
+        int8_t redim = 0;
+        while(true){
+            c = fin.get();
+            if (fin.eof()) {
+                std::cout << "[EoF reached]\n";
+                break;
+            }                     // check for EOF
+            else
+                std::cout << c << "\n";
+            if(fin.peek() == EOF){
+                redim = 8 - residue + '0';
+            }
+            int k = 7;
+            while(k >= redim){
+                ((c & (1 << k)) != 0) ? flag = true: flag = false;
+                if(flag){
+                    bin_code+="1";
+                } else {
+                    bin_code+="0";
+                }
+                k--;
+                it = codes.find(bin_code);
+                if(it != codes.end()){
+                    out << it->second;
+                    bin_code = "";
+                }
+            }
+        }
+        if (fin.eof())                      // check for EOF
+            std::cout << "[EoF reached]\n" << fin.good() << fin.bad() << fin.eof() << fin.fail();
         return;
     }
     std::cout << "Something went wrong" << '\n';
