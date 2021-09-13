@@ -144,26 +144,38 @@ void encode(Node *root, std::map <char, std::string> codes) {
     if(!out.is_open()){
         std::cout << "OOps something went wrong" << '\n';
     }
+    out << "0 ";
+    for(auto& it : codes){
+        out << it.first << ' ' << it.second << ' ';
+    }
+    out << '\n';
     std::ifstream fin("C:\\Users\\SLAVA\\CLionProjects\\Huffman\\input.txt", std::ios::in);
     char symb = 0, code;
     symb = fin.get();
     uint8_t i = 0;
     while(1){
         int8_t k = 7;
-
+        int8_t counter = 0;
         while(k >= 0){
             while(i < codes[symb].length() && k >= 0) {
-                bool check = ((codes[symb][i] == '0') ? 0 : 1);
+                //bool check = ((codes[symb][i] == '0') ? 0 : 1);
                 code |= (((codes[symb][i] == '0') ? 0 : 1) << k);
                 i++;
+                counter++;
                 k--;
             }
             if(k>=0) {
-                i = 0;
                 symb = fin.get();
-                if(symb == -1){
+                counter %= 8;
+                counter += '0';
+                if(symb == EOF){
+                    out << code;
+                    out.seekp(0);
+                    out << char(counter) << ' '; //i - is the number of bits we have in the beginning of last byte
+                    std::cout << std::bitset<8>(int(code)) << ' ';
                     return;
                 }
+                i = 0;
             }
         }
         k = 7;
@@ -203,7 +215,11 @@ int main() {
     auto ptr_codes = &codes;
     LNR(huftree.root, "", ptr_codes);
     print_tree(huftree.root, 0);
-    std:: cout << 'a' << codes['a'] << 'b' << codes['b'] << 'c' << codes['c'] << 'd' << codes['d'] << '\n';
+    for(auto& it : codes){
+        std::cout << it.first << it.second;
+    }
+    std::cout << '\n';
+
     encode(huftree.root, codes);
 
 
