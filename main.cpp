@@ -3,6 +3,9 @@
 #include <map>
 #include <string>//continue 159
 #include <bitset>
+#include <iterator>
+#include <algorithm>
+
 struct Node {
     char a = 0;
     int weight = 0;
@@ -149,21 +152,23 @@ void encode(std::map <char, std::string> codes) {
     if(!out.is_open()){
         std::cout << "OOps something went wrong" << '\n';
     }
-    out << "0 ";
+    out << "0 0 ";
     for(auto& it : codes){
         out << it.first << ' ' << it.second << ' ';
     }
     out << '\n';
-    std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\input.txt)", std::ios::in);
-    char symb = 0, code;
+    std::ifstream fin;
+    fin.open(R"(C:\Users\SLAVA\CLionProjects\Huffman\input.txt)", std::ios::in);
+    char symb = 0;
+    uint8_t code = 0;
     symb = fin.get();
     uint8_t i = 0;
+    bool flag = false;
     while(true){
         int8_t k = 7;
         int8_t counter = 0;
         while(k >= 0){
             while(i < codes[symb].length() && k >= 0) {
-                //bool check = ((codes[symb][i] == '0') ? 0 : 1);
                 code |= (((codes[symb][i] == '0') ? 0 : 1) << k);
                 i++;
                 counter++;
@@ -171,15 +176,26 @@ void encode(std::map <char, std::string> codes) {
             }
             if(k>=0) {
                 symb = fin.get();
+                if(symb == '\n'){
+                    flag = true;
+                }
                 counter %= 8;
-                counter += '0';
-                if(symb == EOF){
+                if(fin.eof()){
+                    counter += '0';
                     out << code;
                     out.seekp(0);
-                    out << char(counter) << ' '; //i - is the number of bits we have in the beginning of last byte
+                    out.put(char(counter)); //i - is the number of bits we have in the beginning of last byte
+                    if(flag){
+                        out.put(' ');
+                        out.put('1');
+                    }
                     //std::cout << std::bitset<8>(int(code)) << ' ';
                     fin.close();
                     out.close();
+                    out.clear();
+                    fin.clear();
+
+
                     return;
                 }
                 i = 0;
@@ -187,17 +203,17 @@ void encode(std::map <char, std::string> codes) {
         }
         k = 7;
         //std::cout << std::bitset<8>(int(code)) << ' ';
-        out << code;
+        out << (char)code;
         code = 0;
     }
 
 }
 void decode(){
-    std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\output.txt)");
+    std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\output.txt)", std::ios::in);
     if(fin.is_open()){
         std::string line;
         std::getline(fin, line);
-        std::cout << line;
+
         //make new map
         std::map <std::string, char> codes;
         int8_t residue = line[0];
@@ -205,42 +221,41 @@ void decode(){
         int64_t start;
         char symb;
         std::map <std::string, char>::iterator it;
-        if(line.size() <= 4){
+        if(line[2] == '1'){
             std::string addition;
             std::getline(fin, addition);
             line = line + "\n" + addition;
         }
-        for(int i = 2; i < line.size(); i++){
+        for(int i = 4; i < line.size(); i++){
             symb = line[i];
             i+=2;
             start = i;
-            while(line[i] != ' '){
+            while(line[i] != ' ' && i < line.size()){
                 i++;
                 counter++;
             }
-            codes[std::string(line, start, counter)] = symb;
+            if(counter != 0){
+                codes[std::string(line, start, counter)] = symb;
+            }
+
             counter = 0;
         }
 
-        std::cout << '\n';
-        for(auto& it : codes){
-            std::cout << it.second << it.first ;
-        }
         //decoding
-        std::ofstream out(R"(C:\Users\SLAVA\CLionProjects\Huffman\decoded.txt)");
+        std::ofstream out(R"(C:\Users\SLAVA\CLionProjects\Huffman\decoded.txt)", std::ios::out);
         int c;
         bool flag;
-        std::string bin_code;
 
+        std::string bin_code;
         int8_t redim = 0;
-        while(true){
-            c = fin.get();
-            if (fin.eof()) {
+        while(!fin.eof()){
+
+            if (!fin.eof()) {
+                c = fin.get();
+            } else {
                 std::cout << "[EoF reached]\n";
                 break;
-            }                     // check for EOF
-            else
-                std::cout << c << "\n";
+            }
             if(fin.peek() == EOF){
                 redim = 8 - residue + '0';
             }
@@ -253,6 +268,7 @@ void decode(){
                     bin_code+="0";
                 }
                 k--;
+
                 it = codes.find(bin_code);
                 if(it != codes.end()){
                     out << it->second;
@@ -261,10 +277,32 @@ void decode(){
             }
         }
         if (fin.eof())                      // check for EOF
-            std::cout << "[EoF reached]\n" << fin.good() << fin.bad() << fin.eof() << fin.fail();
+            std::cout << "[EoF reached]\n" << fin.good() << fin.bad() << fin.eof() << fin.fail() << '\n';
+        out.close();
+        fin.close();
         return;
     }
     std::cout << "Something went wrong" << '\n';
+}
+
+bool compareFiles(const std::string& p1, const std::string& p2) {
+    std::ifstream f1(p1, std::ifstream::binary|std::ifstream::ate);
+    std::ifstream f2(p2, std::ifstream::binary|std::ifstream::ate);
+
+    if (f1.fail() || f2.fail()) {
+        return false; //file problem
+    }
+
+    if (f1.tellg() != f2.tellg()) {
+        return false; //size mismatch
+    }
+
+    //seek back to beginning and use std::equal to compare contents
+    f1.seekg(0, std::ifstream::beg);
+    f2.seekg(0, std::ifstream::beg);
+    return std::equal(std::istreambuf_iterator<char>(f1.rdbuf()),
+                      std::istreambuf_iterator<char>(),
+                      std::istreambuf_iterator<char>(f2.rdbuf()));
 }
 int main() {
     std::ifstream fin(R"(C:\Users\SLAVA\CLionProjects\Huffman\input.txt)", std::ios::in);
@@ -281,7 +319,9 @@ int main() {
     while((symb = fin.get()) != EOF){
         add_node_list(&freq, symb);
     }
+
     fin.close();
+    fin.clear();
     sort_list_by_weight(&freq);
     Node* tmp;
     tmp = freq.head;
@@ -296,14 +336,19 @@ int main() {
     auto ptr_codes = &codes;
     LNR(huftree.root, "", ptr_codes);
     print_tree(huftree.root, 0);
-    for(auto& it : codes){
-        std::cout << it.first << it.second;
-    }
-    std::cout << '\n';
+//    for(auto& it : codes){
+//        std::cout << it.first << it.second;
+//    }
+//    std::cout << '\n';
 
     encode(codes);
     decode();
-
+    if(compareFiles(R"(C:\Users\SLAVA\CLionProjects\Huffman\input.txt)",
+                 R"(C:\Users\SLAVA\CLionProjects\Huffman\decoded.txt)")){
+        std::cout<< "Files are equal\n";
+    } else {
+        std::cout << "Files are not equal\n";
+    }
 
 
 
